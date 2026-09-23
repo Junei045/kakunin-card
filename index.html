@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>通話中の確認カード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2F4F7;
+  --card: #FFFFFF;
+  --ink: #16202B;
+  --muted: #55606C;
+  --line: #CDD4DC;
+  --navy: #1E3A5F;
+  --navy-ink: #FFFFFF;
+  --say: #E8F0F9;
+  --stop: #B42318;
+  --stop-bg: #FDECEA;
+  --stop-ink: #FFFFFF;
+  --ok: #2F6B3A;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161D; --card: #19222C; --ink: #EEF2F6; --muted: #A5B0BC; --line: #2F3B48;
+    --navy: #8FB7E6; --navy-ink: #0D1824; --say: #1F3045; --stop: #FF8A7A; --stop-bg: #3A1D1A; --stop-ink: #2A0B07; --ok: #8FD19B;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10161D; --card: #19222C; --ink: #EEF2F6; --muted: #A5B0BC; --line: #2F3B48;
+  --navy: #8FB7E6; --navy-ink: #0D1824; --say: #1F3045; --stop: #FF8A7A; --stop-bg: #3A1D1A; --stop-ink: #2A0B07; --ok: #8FD19B;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0; min-height: 100%; background: var(--bg); color: var(--ink);
+  font-family: "BIZ UDPGothic", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+  font-size: 18px; line-height: 1.7; -webkit-text-size-adjust: 100%;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--navy); outline-offset: 3px; }
+/* 画面切り替え時に見出しへ移す読み上げ用のフォーカスは、枠を出さない */
+[tabindex="-1"]:focus, [tabindex="-1"]:focus-visible { outline: none; }
+main { max-width: 32rem; margin: 0 auto; padding: 1rem 1rem 2rem; }
+h1 { font-size: 1.5rem; line-height: 1.4; margin: .5rem 0 .8rem; }
+h2 { font-size: 1.3rem; line-height: 1.4; margin: 0 0 .8rem; }
+p { margin: 0 0 .8rem; }
+.muted { color: var(--muted); font-size: .9rem; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1.2rem; margin-bottom: 1rem; }
+
+.big {
+  display: block; width: 100%; border: 0; border-radius: 14px; padding: 1.1rem 1rem;
+  font-size: 1.25rem; font-weight: 700; text-align: center; text-decoration: none; margin-bottom: .7rem; line-height: 1.4;
+}
+.primary { background: var(--navy); color: var(--navy-ink); }
+.secondary { background: var(--card); color: var(--navy); border: 2px solid var(--navy); }
+.danger { background: var(--stop); color: var(--stop-ink); }
+.quiet { background: none; border: 0; color: var(--navy); text-decoration: underline; padding: .6rem 0; font-size: 1rem; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.pair .big { margin-bottom: 0; }
+
+/* ステップの進み具合（実際に順番のある手順なので番号で示す） */
+.steps { display: flex; gap: .35rem; margin: .2rem 0 1rem; }
+.steps span { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+.steps span.on { background: var(--navy); }
+.stepno { color: var(--muted); font-size: .95rem; margin-bottom: .2rem; }
+
+.say { background: var(--say); border-radius: 12px; padding: 1rem 1.1rem; margin: .4rem 0 1rem; font-size: 1.35rem; font-weight: 700; line-height: 1.6; }
+.say small { display: block; font-size: .85rem; font-weight: 400; color: var(--muted); margin-bottom: .2rem; }
+.watch { margin: 0 0 1rem; padding-left: 1.2em; }
+.watch li { margin-bottom: .3rem; }
+.label { font-weight: 700; margin-bottom: .2rem; }
+
+.stop { background: var(--stop-bg); border: 3px solid var(--stop); }
+.stop h2 { color: var(--stop); font-size: 1.6rem; }
+.reason { font-weight: 700; }
+
+.contact { display: flex; align-items: center; gap: .6rem; padding: .6rem 0; border-bottom: 1px solid var(--line); }
+.contact:last-child { border-bottom: 0; }
+.contact .who { flex: 1; min-width: 0; }
+.contact .who b { display: block; }
+.contact .who span { color: var(--muted); font-size: .9rem; }
+.contact a { background: var(--ok); color: var(--card); border-radius: 10px; padding: .6rem .9rem; text-decoration: none; font-weight: 700; white-space: nowrap; }
+.contact button { border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: .5rem .7rem; font-size: .9rem; }
+
+.field { margin-bottom: .8rem; }
+.field label { display: block; font-weight: 700; margin-bottom: .2rem; }
+.field input { width: 100%; padding: .75rem .8rem; border: 2px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 1.1rem; }
+.err { color: var(--stop); font-weight: 700; }
+
+.words { display: flex; flex-wrap: wrap; gap: .5rem; margin: .4rem 0 .6rem; }
+.words span { border: 2px solid var(--stop); color: var(--stop); border-radius: 999px; padding: .2rem .8rem; font-weight: 700; }
+.hotline { display: grid; gap: .6rem; }
+[hidden] { display: none !important; }
+.issuer { max-width: 32rem; margin: 0 auto; padding: 1rem 1rem 1.5rem; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: .9rem; }
+.issuer b { color: var(--ink); font-size: 1rem; }
+.issuer a { color: var(--navy); }
+</style>
+</head>
+<body>
+<main id="app" aria-live="polite"></main>
+<footer class="issuer">
+  <p>発行：<b>栄防犯協会</b></p>
+  <p><a href="https://sites.google.com/view/sakae-bouhankyoukai/%E6%A0%84-%E5%9C%B0%E5%9F%9F%E5%AE%89%E5%85%A8%E6%83%85%E5%A0%B1" target="_blank" rel="noopener">栄防犯協会のホームページ</a></p>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+  const app = document.getElementById("app");
+
+  // ---------- かけ直し先の保存（この端末の中だけ） ----------
+  const loadContacts = () => { try { return JSON.parse(localStorage.getItem("kakunin:contacts") || "[]"); } catch { return []; } };
+  const saveContacts = (list) => { try { localStorage.setItem("kakunin:contacts", JSON.stringify(list)); } catch {} };
+
+  // ---------- 確認の手順 ----------
+  // 顔の置き換えは、横顔・顔の前を横切る手・顔に触れる動きが苦手。
+  // どの手順も「見抜けたか」ではなく「確かめる行動をとる」ことが目的。
+  const CALM = {
+    title: "まず、落ち着いて時間をもらいましょう",
+    say: "ちょっと待ってね。すぐ戻るから、そのまま待ってて。",
+    watch: [
+      "「今すぐ」「急いで」と急がせる相手は、あやしいです。",
+      "本当の家族なら、少し待つくらいで怒りません。",
+    ],
+    next: true,
+  };
+  const VIDEO_STEPS = [
+    CALM,
+    {
+      title: "真横を向いてもらいましょう",
+      say: "画面がよく見えないの。ちょっと横を向いてみて。",
+      watch: ["顔の輪郭がにじむ、ゆがむ", "耳や髪のあたりがぼやける", "横を向くのを嫌がる、話をそらす", "「カメラの調子が悪い」と言って映像を止める"],
+    },
+    {
+      title: "顔の前で手を動かしてもらいましょう",
+      say: "手のひらを顔の前で、ゆっくり左右に動かしてみて。",
+      watch: ["手と顔が溶け合うように見える", "手が顔の後ろに消える", "一瞬、別の顔がのぞく"],
+    },
+    {
+      title: "顔にさわってもらいましょう",
+      say: "指で鼻を押してみて。眼鏡をかけていたら外してみて。",
+      watch: ["鼻や頬がへこまない、形が変わらない", "眼鏡を外しても顔がそのまま", "動きと顔の変化がずれる"],
+    },
+  ];
+  const QUESTION = {
+    title: "本人しか知らないことを聞きましょう",
+    say: "家族の合言葉を言ってみて。",
+    note: "合言葉を決めていない場合は、SNSなどに書いていない思い出を聞きます。例：「去年のお正月、何を食べた？」",
+    watch: ["答えられない、ごまかす", "「そんなこと今はいいから」と話をそらす", "声は似ていても、話し方や呼び方がいつもと違う"],
+  };
+  const VOICE_STEPS = [CALM, QUESTION];
+  const VIDEO_ALL = [...VIDEO_STEPS, QUESTION];
+
+  // あやしいと判断する理由の言い方
+  const BAD_REASON = {
+    "真横を向いてもらいましょう": "横を向いたときに、顔が不自然でした。",
+    "顔の前で手を動かしてもらいましょう": "手と顔の重なりが不自然でした。",
+    "顔にさわってもらいましょう": "顔にさわったときの変化が不自然でした。",
+    "本人しか知らないことを聞きましょう": "本人なら知っているはずのことに答えられませんでした。",
+  };
+
+  let steps = [];
+  let pos = 0;
+  let mode = "video";
+
+  // ---------- 画面 ----------
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const telHref = (n) => "tel:" + String(n).replace(/[^\d+#*]/g, "").replace(/#/g, "%23");
+
+  function show(html) {
+    app.innerHTML = html;
+    window.scrollTo(0, 0);
+    const h = app.querySelector("h1, h2");
+    if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+  }
+
+  function home() {
+    show(`
+      <h1>通話中の確認カード</h1>
+      <div class="panel">
+        <p>電話やビデオ通話で<b>お金の話</b>が出たら、このカードの順番で確かめましょう。</p>
+        <p class="muted">顔も声も、AIでそっくりにまねできる時代です。顔が見えても、声が同じでも、それだけでは本人とは限りません。</p>
+      </div>
+      <button class="big primary" data-go="video">ビデオ通話で確かめる</button>
+      <button class="big secondary" data-go="voice">電話（声だけ）で確かめる</button>
+      <div class="panel" style="margin-top:1rem">
+        <p class="label">こんな言葉が出たら要注意</p>
+        <div class="words"><span>今すぐ</span><span>誰にも言わないで</span><span>お金を振り込んで</span><span>電子マネー</span><span>口座を貸して</span><span>もうかる話</span><span>番号が変わった</span></div>
+      </div>
+      <button class="big secondary" data-go="contacts">かけ直し先を登録する（${loadContacts().length}件）</button>
+      <p class="muted">通話中にこの画面を見るときは、スピーカーにしてから切り替えるか、別のスマホやタブレットで開いてください。</p>
+    `);
+  }
+
+  function stepView() {
+    const s = steps[pos];
+    const dots = steps.map((_, i) => `<span class="${i <= pos ? "on" : ""}"></span>`).join("") + "<span></span>";
+    const total = steps.length + 1; // 最後の「かけ直し」を含める
+    show(`
+      <div class="steps" aria-hidden="true">${dots}</div>
+      <p class="stepno">${pos + 1} / ${total}</p>
+      <h2>${esc(s.title)}</h2>
+      <div class="say"><small>こう伝えます</small>「${esc(s.say)}」</div>
+      ${s.note ? `<p class="muted">${esc(s.note)}</p>` : ""}
+      <p class="label">${s.next ? "覚えておくこと" : "こんなときは、あやしいです"}</p>
+      <ul class="watch">${s.watch.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>
+      ${s.next
+        ? `<button class="big primary" data-act="ok">つぎへ</button>`
+        : `<div class="pair">
+             <button class="big danger" data-act="bad">あやしかった</button>
+             <button class="big primary" data-act="ok">問題なし</button>
+           </div>
+           <button class="big secondary" data-act="refused" style="margin-top:.7rem">断られた・話をそらされた</button>`}
+      <button class="quiet" data-go="home">最初の画面にもどる</button>
+    `);
+  }
+
+  function contactsBlock() {
+    const list = loadContacts();
+    if (!list.length) {
+      return `<p>かけ直し先がまだ登録されていません。本人の番号は、<b>いま通話している相手からではなく</b>、電話帳や手帳で確かめてください。</p>
+              <button class="big secondary" data-go="contacts">かけ直し先を登録する</button>`;
+    }
+    return list.map((c) => `
+      <div class="contact">
+        <div class="who"><b>${esc(c.name)}</b><span>${esc(c.tel)}</span></div>
+        <a href="${telHref(c.tel)}">かける</a>
+      </div>`).join("");
+  }
+
+  const HOTLINES = `
+    <div class="hotline">
+      <a class="big secondary" href="tel:%239110">警察の相談窓口　#9110</a>
+      <a class="big secondary" href="tel:188">消費者ホットライン　188</a>
+      <a class="big danger" href="tel:110">いま危ない・お金を渡しそう　110</a>
+    </div>`;
+
+  function stopView(reason) {
+    show(`
+      <div class="panel stop">
+        <h2>通話を切りましょう</h2>
+        <p class="reason">${esc(reason)}</p>
+        <p>詐欺のおそれがあります。お金の話には応じず、このまま通話を切ってください。切っても失礼ではありません。</p>
+      </div>
+      <div class="panel">
+        <p class="label">本人に、知っている番号でかけ直して確かめる</p>
+        ${contactsBlock()}
+      </div>
+      <div class="panel">
+        <p class="label">相談する</p>
+        ${HOTLINES}
+      </div>
+      <button class="big primary" data-go="home">最初の画面にもどる</button>
+    `);
+  }
+
+  function finalView() {
+    show(`
+      <div class="steps" aria-hidden="true">${steps.map(() => '<span class="on"></span>').join("")}<span class="on"></span></div>
+      <p class="stepno">${steps.length + 1} / ${steps.length + 1}</p>
+      <h2>最後に、一度切ってかけ直しましょう</h2>
+      <div class="say"><small>こう伝えます</small>「いったん切るね。こっちからかけ直すから。」</div>
+      <div class="panel">
+        <p><b>おかしなところがなくても、本人とは限りません。</b>いまの技術では、見た目や声だけで本物かどうかを決めることはできないからです。</p>
+        <p>かけ直すのは、<b>いま話していた相手が教えた番号ではなく</b>、前から知っている番号です。</p>
+      </div>
+      <div class="panel">
+        <p class="label">かけ直し先</p>
+        ${contactsBlock()}
+      </div>
+      <div class="panel">
+        <p class="label">かけ直したら、本人は「そんな電話はしていない」と言った</p>
+        <p>それは詐欺です。相談してください。</p>
+        ${HOTLINES}
+      </div>
+      <button class="big primary" data-go="home">最初の画面にもどる</button>
+    `);
+  }
+
+  function contactsView(msg) {
+    const list = loadContacts();
+    show(`
+      <h1>かけ直し先の登録</h1>
+      <p class="muted">家族など、本人に確かめたい人の番号を登録します。番号はこのスマホの中だけに保存され、どこにも送信されません。</p>
+      <div class="panel">
+        ${list.length ? list.map((c, i) => `
+          <div class="contact">
+            <div class="who"><b>${esc(c.name)}</b><span>${esc(c.tel)}</span></div>
+            <button data-del="${i}">消す</button>
+          </div>`).join("") : `<p class="muted">まだ登録がありません。</p>`}
+      </div>
+      <div class="panel">
+        <div class="field"><label for="cname">呼び名</label><input id="cname" placeholder="例：長男 たかし" autocomplete="off"></div>
+        <div class="field"><label for="ctel">電話番号</label><input id="ctel" type="tel" inputmode="tel" placeholder="例：090-1234-5678" autocomplete="off"></div>
+        ${msg ? `<p class="err">${esc(msg)}</p>` : ""}
+        <button class="big primary" data-act="add">登録する</button>
+      </div>
+      <p class="muted">「番号が変わった」と言われても、その番号はここに登録しないでください。前の番号にかけて、本人に確かめてからにしましょう。</p>
+      <button class="big secondary" data-go="home">最初の画面にもどる</button>
+    `);
+  }
+
+  // ---------- 操作 ----------
+  app.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-go], [data-act], [data-del]");
+    if (!b) return;
+    if (b.dataset.go) {
+      const g = b.dataset.go;
+      if (g === "home") return home();
+      if (g === "contacts") return contactsView();
+      mode = g; steps = g === "video" ? VIDEO_ALL : VOICE_STEPS; pos = 0; return stepView();
+    }
+    if (b.dataset.del !== undefined) {
+      const list = loadContacts(); list.splice(+b.dataset.del, 1); saveContacts(list); return contactsView();
+    }
+    const act = b.dataset.act;
+    if (act === "add") {
+      const name = document.getElementById("cname").value.trim();
+      const tel = document.getElementById("ctel").value.trim();
+      if (!name || !tel) return contactsView("呼び名と電話番号の両方を入れてください。");
+      if (tel.replace(/[^\d]/g, "").length < 3) return contactsView("電話番号を確かめてください。");
+      const list = loadContacts(); list.push({ name, tel }); saveContacts(list); return contactsView();
+    }
+    const s = steps[pos];
+    if (act === "bad") return stopView(BAD_REASON[s.title] || "おかしなところがありました。");
+    if (act === "refused") return stopView("確かめるためのお願いを、断られたりそらされたりしました。本物の家族なら、確かめることに協力してくれるはずです。");
+    if (act === "ok") { pos++; return pos < steps.length ? stepView() : finalView(); }
+  });
+
+  home();
+})();
+</script>
+</body>
+</html>
